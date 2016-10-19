@@ -4,7 +4,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 
 import scala.util.control.NonFatal
 
-object Decrypt {
+object DecryptConfig {
   def apply(password: String, config: Config = ConfigFactory.load()): String = try {
     if (config getBoolean "encryptedPasswords") {
       val secret = config getString "application.secret"

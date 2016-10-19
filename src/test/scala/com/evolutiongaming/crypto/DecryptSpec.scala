@@ -9,7 +9,7 @@ class DecryptSpec extends FlatSpec with BeforeAndAfterEach with Matchers {
   private def decrypt(configFile: String): String = {
     val config = ConfigFactory.load(configFile)
     val password = config.getString("password")
-    val decrypted = Decrypt(password, config)
+    val decrypted = DecryptConfig(password, config)
     decrypted
   }
 
