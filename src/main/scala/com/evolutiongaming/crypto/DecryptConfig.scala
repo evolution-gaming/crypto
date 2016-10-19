@@ -1,7 +1,6 @@
 package com.evolutiongaming.crypto
 
 import com.typesafe.config.{Config, ConfigFactory}
-
 import scala.util.control.NonFatal
 
 object DecryptConfig {

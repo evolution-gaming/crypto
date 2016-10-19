@@ -3,7 +3,7 @@ package com.evolutiongaming.crypto
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 
-class DecryptSpec extends FlatSpec with BeforeAndAfterEach with Matchers {
+class DecryptConfigSpec extends FlatSpec with BeforeAndAfterEach with Matchers {
   val correctPassword = "jboss"
 
   private def decrypt(configFile: String): String = {
