@@ -8,8 +8,9 @@ import javax.crypto.spec.{IvParameterSpec, SecretKeySpec}
 import org.apache.commons.codec.binary.Hex
 
 /**
-  * Code extract from https://github.com/playframework/playframework/blob/master/framework/src/play/src/main/scala/play/api/libs/Crypto.scala
-  * in order not to pull in whole Play framework as a dependency.
+  * Copyright (C) 2009-2016 Lightbend Inc. <https://www.lightbend.com>
+  *
+  * Based on https://github.com/playframework/playframework/blob/master/framework/src/play/src/main/scala/play/api/libs/Crypto.scala
   */
 object Crypto {
   val aesTransformation: String = "AES/CTR/NoPadding"
