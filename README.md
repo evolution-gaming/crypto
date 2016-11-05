@@ -19,7 +19,7 @@ Add the library to your dependencies list
 
 Create an application config file `environments/default.conf`:
 
-```json
+```
 encryptedPasswords = true
 application {
   secret = "abcdefghijklmnop" // only for example purposes, you should use a strong randomly generated secret
