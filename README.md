@@ -46,5 +46,4 @@ val decrypted = DecryptConfig(password, config) // decrypting the password
 Examples
 ========
 
-For more examples, please, check out
-[DecryptConfigSpec](https://github.com/evolution-gaming/crypto/tree/master/src/test/scala/com/evolutiongaming/crypto/DecryptConfigSpec.scala)
+For more examples you can review [DecryptConfigSpec](https://github.com/evolution-gaming/crypto/tree/master/src/test/scala/com/evolutiongaming/crypto/DecryptConfigSpec.scala).
