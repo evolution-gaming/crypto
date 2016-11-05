@@ -34,7 +34,8 @@ Use the library as follows
 import com.evolutiongaming.crypto.DecryptConfig
 import com.typesafe.config.ConfigFactory
 
-val environment = System.getenv(environmentKey)).orElse(sys.props.get(environmentKey).getOrElse("default") // select the environment to use
+val environmentKey = "ENVIRONMENT"
+val environment = System.getenv(environmentKey).orElse(sys.props.get(environmentKey).getOrElse("default")) // select the environment to use
 val config = ConfigFactory.parseResourcesAnySyntax(s"environments/$environment") // load the config file
 
 val password = config.getString("password") // the encrypted password to decrypt
