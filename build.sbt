@@ -12,7 +12,9 @@ organizationHomepage := Some(url("http://evolutiongaming.com"))
 
 bintrayOrganization := Some("evolutiongaming")
 
-scalaVersion := "2.11.11"
+scalaVersion := "2.12.2"
+
+crossScalaVersions := Seq("2.12.2", "2.11.11")
 
 scalacOptions ++= Seq(
   "-encoding", "UTF-8",
@@ -34,3 +36,5 @@ libraryDependencies ++= Seq(
 )
 
 licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")))
+
+releaseCrossBuild := true
