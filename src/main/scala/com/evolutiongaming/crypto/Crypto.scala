@@ -14,6 +14,11 @@ import org.apache.commons.codec.binary.Hex
   */
 object Crypto {
   val aesTransformation: String = "AES/CTR/NoPadding"
+  val AesKeyBytesMaxSize: Int = 16
+
+  class AesKeyTooLong extends Exception(
+    s"AES key should have size no more than $AesKeyBytesMaxSize bytes"
+  )
 
   /**
     * Encrypt a String with the AES encryption standard and the supplied private key.
@@ -36,6 +41,7 @@ object Crypto {
     * @return A Base64 encrypted string.
     */
   def encryptAES(value: String, privateKey: String): String = {
+    validateAesKeyLength(privateKey)
     val skeySpec = secretKeyWithSha256(privateKey, "AES")
     val cipher = getCipherWithConfiguredProvider(aesTransformation)
     cipher.init(Cipher.ENCRYPT_MODE, skeySpec)
@@ -66,6 +72,7 @@ object Crypto {
     * @return The decrypted String.
     */
   def decryptAES(value: String, privateKey: String): String = {
+    validateAesKeyLength(privateKey)
     val seperator = "-"
     val sepIndex = value.indexOf(seperator)
     if (sepIndex < 0) {
@@ -84,6 +91,9 @@ object Crypto {
     }
   }
 
+  private def validateAesKeyLength(key: String): Unit =
+    require(key.getBytes("utf-8").length <= AesKeyBytesMaxSize, throw new AesKeyTooLong)
+
   /**
     * Transform an hexadecimal String to a byte array.
     * From https://github.com/playframework/playframework/blob/master/framework/src/play/src/main/scala/play/api/libs/Codecs.scala
@@ -92,7 +102,7 @@ object Crypto {
 
   /** Backward compatible AES ECB mode decryption support. */
   private def decryptAESVersion0(value: String, privateKey: String): String = {
-    val raw = privateKey.substring(0, 16).getBytes("utf-8")
+    val raw = privateKey.substring(0, AesKeyBytesMaxSize).getBytes("utf-8")
     val skeySpec = new SecretKeySpec(raw, "AES")
     val cipher = getCipherWithConfiguredProvider("AES")
     cipher.init(Cipher.DECRYPT_MODE, skeySpec)
@@ -129,7 +139,9 @@ object Crypto {
     // max allowed length in bits / (8 bits to a byte)
     // For AES we hardcode keylength to 128bit minimum to not depend on environment security policy settings:
     // it may vary between 128 and 256 bits which can yield different encryption keys if we don't
-    val maxAllowedKeyLength = if (algorithm == "AES") 16 else Cipher.getMaxAllowedKeyLength(algorithm) / 8
+    val maxAllowedKeyLength =
+      if (algorithm == "AES") AesKeyBytesMaxSize
+      else Cipher.getMaxAllowedKeyLength(algorithm) / 8
     val raw = messageDigest.digest().slice(0, maxAllowedKeyLength)
     new SecretKeySpec(raw, algorithm)
   }
