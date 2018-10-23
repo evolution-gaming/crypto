@@ -2,6 +2,7 @@ package com.evolutiongaming.crypto
 
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+import DecryptConfig.DecryptConfigOps
 
 class DecryptConfigSpec extends FlatSpec with BeforeAndAfterEach with Matchers {
   val correctPassword = "jboss"
@@ -37,5 +38,16 @@ class DecryptConfigSpec extends FlatSpec with BeforeAndAfterEach with Matchers {
   it should "fail with bad secret" in {
     val decrypted = decrypt("bad-secret.conf")
     decrypted should not equal correctPassword
+  }
+
+  it should "decrypt encrypted passwords by path (Config extension method)" in {
+    val config = ConfigFactory.load("encrypted.conf")
+    config.decryptPath("password") shouldEqual correctPassword
+  }
+
+  it should "support unencrypted passwords (Config extension method)" in {
+    val config = ConfigFactory.load("unencrypted.conf")
+    val password = config.getString("password")
+    config.decryptString(password) shouldEqual correctPassword
   }
 }
