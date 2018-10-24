@@ -12,6 +12,19 @@ object DecryptConfig {
       password
     }
   } catch {
-    case NonFatal(e) => password
+    case NonFatal(_) => password
+  }
+
+  implicit class DecryptConfigOps(val self: Config) extends AnyVal {
+
+    def decryptString(encrypted: String): String =
+      apply(encrypted, self)
+
+    def decryptPath(path: String): String = try {
+      val encrypted = self.getString(path)
+      apply(encrypted, self)
+    } catch {
+      case NonFatal(_) => path
+    }
   }
 }
