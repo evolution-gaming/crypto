@@ -2,9 +2,9 @@ package com.evolutiongaming.crypto
 
 import java.security.MessageDigest
 import java.util.Base64
+
 import javax.crypto.Cipher
 import javax.crypto.spec.{IvParameterSpec, SecretKeySpec}
-
 import org.apache.commons.codec.binary.Hex
 
 /**
@@ -41,7 +41,6 @@ object Crypto {
     * @return A Base64 encrypted string.
     */
   def encryptAES(value: String, privateKey: String): String = {
-    validateAesKeyLength(privateKey)
     val skeySpec = secretKeyWithSha256(privateKey, "AES")
     val cipher = getCipherWithConfiguredProvider(aesTransformation)
     cipher.init(Cipher.ENCRYPT_MODE, skeySpec)
@@ -50,8 +49,8 @@ object Crypto {
     // '2-*' represents an encrypted payload with an IV
     // '1-*' represents an encrypted payload without an IV
     Option(cipher.getIV) match {
-      case Some(iv) => s"2-${ Base64.getEncoder.encodeToString(iv ++ encryptedValue) }"
-      case None     => s"1-${ Base64.getEncoder.encodeToString(encryptedValue) }"
+      case Some(iv) => s"2-${Base64.getEncoder.encodeToString(iv ++ encryptedValue)}"
+      case None => s"1-${Base64.getEncoder.encodeToString(encryptedValue)}" // will never fall here as CTR requires IV
     }
   }
 
@@ -72,7 +71,6 @@ object Crypto {
     * @return The decrypted String.
     */
   def decryptAES(value: String, privateKey: String): String = {
-    validateAesKeyLength(privateKey)
     val seperator = "-"
     val sepIndex = value.indexOf(seperator)
     if (sepIndex < 0) {
@@ -85,7 +83,7 @@ object Crypto {
           decryptAESVersion1(data, privateKey)
         case "2" =>
           decryptAESVersion2(data, privateKey)
-        case _   =>
+        case _ =>
           throw new RuntimeException("Unknown version")
       }
     }
@@ -102,6 +100,7 @@ object Crypto {
 
   /** Backward compatible AES ECB mode decryption support. */
   private def decryptAESVersion0(value: String, privateKey: String): String = {
+    validateAesKeyLength(privateKey)
     val raw = privateKey.substring(0, AesKeyBytesMaxSize).getBytes("utf-8")
     val skeySpec = new SecretKeySpec(raw, "AES")
     val cipher = getCipherWithConfiguredProvider("AES")
@@ -113,7 +112,7 @@ object Crypto {
   private def decryptAESVersion1(value: String, privateKey: String): String = {
     val data = Base64.getDecoder.decode(value)
     val skeySpec = secretKeyWithSha256(privateKey, "AES")
-    val cipher = getCipherWithConfiguredProvider(aesTransformation)
+    val cipher = getCipherWithConfiguredProvider("AES")
     cipher.init(Cipher.DECRYPT_MODE, skeySpec)
     new String(cipher.doFinal(data), "utf-8")
   }
@@ -139,9 +138,7 @@ object Crypto {
     // max allowed length in bits / (8 bits to a byte)
     // For AES we hardcode keylength to 128bit minimum to not depend on environment security policy settings:
     // it may vary between 128 and 256 bits which can yield different encryption keys if we don't
-    val maxAllowedKeyLength =
-      if (algorithm == "AES") AesKeyBytesMaxSize
-      else Cipher.getMaxAllowedKeyLength(algorithm) / 8
+    val maxAllowedKeyLength = if (algorithm == "AES") AesKeyBytesMaxSize else Cipher.getMaxAllowedKeyLength(algorithm) / 8
     val raw = messageDigest.digest().slice(0, maxAllowedKeyLength)
     new SecretKeySpec(raw, algorithm)
   }
