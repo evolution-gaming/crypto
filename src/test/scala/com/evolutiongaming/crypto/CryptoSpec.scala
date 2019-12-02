@@ -1,8 +1,9 @@
 package com.evolutiongaming.crypto
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class CryptoSpec extends FlatSpec with Matchers {
+class CryptoSpec extends AnyFlatSpec with Matchers {
   behavior of "Crypto"
 
   it should "decrypt data encrypted with same AES key" in {
