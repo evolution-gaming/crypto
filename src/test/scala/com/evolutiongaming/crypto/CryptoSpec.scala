@@ -40,25 +40,15 @@ class CryptoSpec extends AnyFlatSpec with Matchers {
     original shouldEqual decrypted
   }
 
-  it should "not give same result when encryption and decryption keys are different" in {
+  it should "fail on decryption when encryption and decryption keys are different" in {
     val original = "test data please ignore"
     val key = "1234567890123456"
     val otherKey = "6543210987654321"
 
     val encrypted = Crypto.encryptAES(original, key)
-    val decrypted = Crypto.decryptAES(encrypted, otherKey)
-
-    original should not equal decrypted
-  }
-
-  it should "not give same result when encryption and decryption keys are different (long and substring)" in {
-    val original = "test data please ignore"
-    val key = "1234567890123456now_it_became_too_long"
-
-    val encrypted = Crypto.encryptAES(original, key)
-    val decrypted = Crypto.decryptAES(encrypted, key.take(16))
-
-    original should not equal decrypted
+    assertThrows[Crypto.DecryptAuthException] {
+      Crypto.decryptAES(encrypted, otherKey)
+    }
   }
 
   // backward compatibility tests
@@ -105,6 +95,22 @@ class CryptoSpec extends AnyFlatSpec with Matchers {
     val original = "secretvalue"
 
     val encrypted = "2-aNJt/st3SsxhFYQ/ybgpM9vudiHQjUf1JqJD"
+    Crypto.decryptAES(encrypted, key) shouldEqual original
+  }
+
+  it should "decrypt with key up to 16 bytes (v3)" in {
+    val key = "1234567890123456"
+    val original = "secretvalue"
+
+    val encrypted = "3-3ziyv9x8EG5Uq9jOVminWlA3huF8IEMFPw8aWiOavK6RqYfKgkel"
+    Crypto.decryptAES(encrypted, key) shouldEqual original
+  }
+
+  it should "decrypt with key bigger than 16 bytes (v3)" in {
+    val key = "1234567890123456" + "now_it_became_too_long"
+    val original = "secretvalue"
+
+    val encrypted = "3-mGkG+PNuDPW390xxtcTMsUB22ppJfQebazmBcsvERfMveNSVwI8q"
     Crypto.decryptAES(encrypted, key) shouldEqual original
   }
   // enb of backward compatibility tests

@@ -1,8 +1,8 @@
 package com.evolutiongaming.crypto
 
+import com.evolutiongaming.crypto.DecryptConfig.DecryptConfigOps
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterEach
-import DecryptConfig.DecryptConfigOps
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -32,14 +32,15 @@ class DecryptConfigSpec extends AnyFlatSpec with BeforeAndAfterEach with Matcher
   }
 
   it should "work with plain AES call" in {
-    val password = "2-DpBV9t/8a19P5o0fohf//Lpup8DF"
-    val secret =  "abcdefghijklmnop"
+    val password = "3-Nsik1A3L3qlpDNTG0fzJhDx/SchtDXeCRThNN9UW4Vf1"
+    val secret = "abcdefghijklmnop"
     Crypto.decryptAES(password, secret) shouldEqual correctPassword
   }
 
   it should "fail with bad secret" in {
-    val decrypted = decrypt("bad-secret.conf")
-    decrypted should not equal correctPassword
+    intercept[Crypto.DecryptAuthException] {
+      decrypt("bad-secret.conf")
+    }
   }
 
   it should "decrypt encrypted passwords by path (Config extension method)" in {

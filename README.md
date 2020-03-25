@@ -15,7 +15,7 @@ Add the following resolver
 
 Add the library to your dependencies list
 
-    libraryDependencies += "com.evolutiongaming" %% "crypto" % "1.2-SNAPSHOT"
+    libraryDependencies += "com.evolutiongaming" %% "crypto" % "1.6-SNAPSHOT"
 
 Create an application config file `environments/default.conf`:
 
@@ -25,7 +25,7 @@ application {
   secret = "abcdefghijklmnop" // only for example purposes, you should use a strong randomly generated secret
 }
 
-password = "2-DpBV9t/8a19P5o0fohf//Lpup8DF" // use com.evolutiongaming.crypto.Encrypt app to encrypt
+password = "3-CYhqa9EgW+YAwO4+0yyYwf4Vi152kB3kKerbOnD9uGpl" // use com.evolutiongaming.crypto.Encrypt app to encrypt
 ```
 
 Use the library as follows
