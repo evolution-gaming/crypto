@@ -1,5 +1,6 @@
 package com.evolutiongaming.crypto
 
+import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.UTF_8
 import java.security.SecureRandom
 
@@ -142,6 +143,8 @@ object Crypto {
     * Current AES mode - V3:
     * - no restrictions on key size - SHA256 hash is used to obtain key entropy
     * - AES/GCM/NoPadding (128 bit key) cipher is used to provide authenticated encryption
+    * - dynamic length random IV - 12 bytes by default with possible extension up to 267 bytes
+    * - 128 bit auth tag length
     */
   private object AES_V3 {
     /*
@@ -159,34 +162,56 @@ object Crypto {
     for GCM IV a 12 byte random byte-array is recommend by NIST
     https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf
      */
-    private val IVLengthBytes = 12
+    private val CurrentIVLengthBytes = 12
+    private val MinIVLengthBytes = 12 //does not allow decrypting with IVs smaller than 12 bytes (96 bits)
 
     def encrypt(value: String, privateKey: String): String = {
       val skeySpec = aesSKey128bitWithSha256(privateKey.getBytes(UTF_8))
-      val iv = new Array[Byte](IVLengthBytes)
+      val iv = new Array[Byte](CurrentIVLengthBytes)
       secureRandom.nextBytes(iv)
       val parameterSpec = new GCMParameterSpec(AuthTagLengthBits, iv)
       val cipher = Cipher.getInstance(CipherTransformation)
       cipher.init(Cipher.ENCRYPT_MODE, skeySpec, parameterSpec)
       val encryptedValue = cipher.doFinal(value.getBytes(UTF_8))
-      Base64.encodeBase64String(iv ++ encryptedValue)
+      encodeEncryptedToString(iv, encryptedValue)
+    }
+
+    private def encodeEncryptedToString(iv: Array[Byte], encryptedValue: Array[Byte]): String = {
+      //1 byte for dynamic IV length encoding
+      val buf = ByteBuffer.allocate(1 + iv.length + encryptedValue.length)
+      require(iv.length >= MinIVLengthBytes, s"IV length shouldn't be smaller than $MinIVLengthBytes bytes")
+      //encode IV length as an unsigned byte starting from MinIVLengthBytes
+      buf.put((iv.length - MinIVLengthBytes).toByte)
+      buf.put(iv)
+      buf.put(encryptedValue)
+      Base64.encodeBase64String(buf.array())
     }
 
     def decrypt(value: String, privateKey: String): String = {
-      val ivWithEncryptedData = Base64.decodeBase64(value)
+      val payload = Base64.decodeBase64(value)
       val skeySpec = aesSKey128bitWithSha256(privateKey.getBytes(UTF_8))
       val cipher = Cipher.getInstance(CipherTransformation)
-      if (ivWithEncryptedData.length < IVLengthBytes) {
+      val ivLength = readValidIvLength(payload)
+
+      val ivOffset = 1 //1 byte for encoded IV length
+      val ivEndIdx = ivOffset + ivLength
+      if (payload.length < ivEndIdx) {
         throw new IllegalArgumentException("invalid data size")
       }
-      val (iv, encryptedData) = ivWithEncryptedData.splitAt(IVLengthBytes)
-      cipher.init(Cipher.DECRYPT_MODE, skeySpec, new GCMParameterSpec(AuthTagLengthBits, iv))
+      val gcmParamSpec = new GCMParameterSpec(AuthTagLengthBits, payload, ivOffset, ivLength)
+      cipher.init(Cipher.DECRYPT_MODE, skeySpec, gcmParamSpec)
+      val decryptInputLength = payload.size - ivEndIdx
       val decryptedValue = try {
-        cipher.doFinal(encryptedData)
+        cipher.doFinal(payload, ivEndIdx, decryptInputLength)
       } catch {
         case e: AEADBadTagException => throw new DecryptAuthException(e)
       }
       new String(decryptedValue, UTF_8)
+    }
+
+    private def readValidIvLength(payload: Array[Byte]): Int = {
+      require(payload.length > 0, "invalid data size")
+      java.lang.Byte.toUnsignedInt(payload(0)) + MinIVLengthBytes
     }
   }
 

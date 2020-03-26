@@ -1,7 +1,15 @@
 package com.evolutiongaming.crypto
 
+import java.nio.charset.StandardCharsets.UTF_8
+
+import javax.crypto.Cipher
+import javax.crypto.spec.{GCMParameterSpec, SecretKeySpec}
+import org.apache.commons.codec.binary.Base64
+import org.apache.commons.codec.digest.DigestUtils
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+
+import scala.util.Random
 
 class CryptoSpec extends AnyFlatSpec with Matchers {
   behavior of "Crypto"
@@ -102,7 +110,7 @@ class CryptoSpec extends AnyFlatSpec with Matchers {
     val key = "1234567890123456"
     val original = "secretvalue"
 
-    val encrypted = "3-3ziyv9x8EG5Uq9jOVminWlA3huF8IEMFPw8aWiOavK6RqYfKgkel"
+    val encrypted = "3-AHlaZLZ//6ac5GsUvBCU8WkeHACSu7KWiqjIWzRcpEnzaKazcUAtcQ=="
     Crypto.decryptAES(encrypted, key) shouldEqual original
   }
 
@@ -110,7 +118,29 @@ class CryptoSpec extends AnyFlatSpec with Matchers {
     val key = "1234567890123456" + "now_it_became_too_long"
     val original = "secretvalue"
 
-    val encrypted = "3-mGkG+PNuDPW390xxtcTMsUB22ppJfQebazmBcsvERfMveNSVwI8q"
+    val encrypted = "3-ABO9A2tkYMUpM9EmuA/+T6/aT/JwWjPYQTp1rchdSg1hyUkpdBoLfw=="
+    Crypto.decryptAES(encrypted, key) shouldEqual original
+  }
+
+  it should "decrypt with max IV length - 255 + 12 = 267 bytes (v3)" in {
+    val key = "1234567890123456"
+    val original = "secretvalue"
+
+    val iv = new Array[Byte](255 + 12)
+    Random.nextBytes(iv)
+    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+    cipher.init(
+      Cipher.ENCRYPT_MODE,
+      new SecretKeySpec(DigestUtils.sha256(key.getBytes(UTF_8)).take(16), "AES"),
+      new GCMParameterSpec(128, iv),
+    )
+    val encryptedData = cipher.doFinal(original.getBytes(UTF_8))
+    val encrypted = s"3-${
+      Base64.encodeBase64String(
+        Array(255.toByte) ++ iv ++ encryptedData
+      )
+    }"
+
     Crypto.decryptAES(encrypted, key) shouldEqual original
   }
   // enb of backward compatibility tests
