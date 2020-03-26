@@ -49,7 +49,6 @@ object Crypto {
     s"3-${ AES_V3.encrypt(value, privateKey) }"
   }
 
-
   /**
     * Decrypts a string with the AES algorithm and the supplied private key - pair to the
     * [[encryptAES]] method.
