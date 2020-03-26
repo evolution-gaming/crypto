@@ -69,8 +69,8 @@ object Crypto {
     if (sepIndex < 0) {
       AES_V0.decrypt(value, privateKey)
     } else {
-      val version = value.substring(0, sepIndex)
-      val data = value.substring(sepIndex + 1, value.length())
+      val version = value.take(sepIndex)
+      val data = value.drop(sepIndex + 1)
       version match {
         case "1" =>
           AES_V1.decrypt(data, privateKey)
