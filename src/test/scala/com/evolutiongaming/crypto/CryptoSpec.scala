@@ -150,7 +150,7 @@ class CryptoSpec extends AnyFlatSpec with Matchers {
       Crypto.decryptAES(encrypted, key)
     }
   }
-  // enb of backward compatibility tests
+  // end of backward compatibility tests
 
   private def encryptV3WithIVLength(key: String, value: String, ivLength: Int): String = {
     val iv = new Array[Byte](ivLength)
