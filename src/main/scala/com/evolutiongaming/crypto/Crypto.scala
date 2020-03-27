@@ -196,7 +196,7 @@ object Crypto {
       require(payload.length >= ivEndIdx, "invalid data size")
       val gcmParamSpec = new GCMParameterSpec(AuthTagLengthBits, payload, ivOffset, ivLength)
       cipher.init(Cipher.DECRYPT_MODE, skeySpec, gcmParamSpec)
-      val decryptInputLength = payload.size - ivEndIdx
+      val decryptInputLength = payload.length - ivEndIdx
       val decryptedValue = try {
         cipher.doFinal(payload, ivEndIdx, decryptInputLength)
       } catch {
