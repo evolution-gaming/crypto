@@ -110,7 +110,7 @@ class CryptoSpec extends AnyFlatSpec with Matchers {
     val key = "1234567890123456"
     val original = "secretvalue"
 
-    val encrypted = "3-AHlaZLZ//6ac5GsUvBCU8WkeHACSu7KWiqjIWzRcpEnzaKazcUAtcQ=="
+    val encrypted = "3-DKSxKVcjKln6zqU4ZnmDOfcb8xZr5DXG1o2b/eK7d9DSd+Aa4h80XQ=="
     Crypto.decryptAES(encrypted, key) shouldEqual original
   }
 
@@ -118,15 +118,42 @@ class CryptoSpec extends AnyFlatSpec with Matchers {
     val key = "1234567890123456" + "now_it_became_too_long"
     val original = "secretvalue"
 
-    val encrypted = "3-ABO9A2tkYMUpM9EmuA/+T6/aT/JwWjPYQTp1rchdSg1hyUkpdBoLfw=="
+    val encrypted = "3-DNU9qTYmX6MTWhpq316+cMn/ZCCuM5Cl1GDiEyWrEc8jt4ew4xA19g=="
     Crypto.decryptAES(encrypted, key) shouldEqual original
   }
 
-  it should "decrypt with max IV length - 255 + 12 = 267 bytes (v3)" in {
+  it should "decrypt with max IV length - 255 bytes (v3)" in {
     val key = "1234567890123456"
     val original = "secretvalue"
 
-    val iv = new Array[Byte](255 + 12)
+    val encrypted = encryptV3WithIVLength(key, original, 255)
+
+    Crypto.decryptAES(encrypted, key) shouldEqual original
+  }
+
+  it should "decrypt with min IV length - 12 bytes (v3)" in {
+    val key = "1234567890123456"
+    val original = "secretvalue"
+
+    val encrypted = encryptV3WithIVLength(key, original, 12)
+
+    Crypto.decryptAES(encrypted, key) shouldEqual original
+  }
+
+  it should "fail decrypt if IV is too small (< 12 bytes) (v3)" in {
+    val key = "1234567890123456"
+    val original = "secretvalue"
+
+    val encrypted = encryptV3WithIVLength(key, original, 11)
+
+    intercept[IllegalArgumentException] {
+      Crypto.decryptAES(encrypted, key)
+    }
+  }
+  // enb of backward compatibility tests
+
+  private def encryptV3WithIVLength(key: String, value: String, ivLength: Int): String = {
+    val iv = new Array[Byte](ivLength)
     Random.nextBytes(iv)
     val cipher = Cipher.getInstance("AES/GCM/NoPadding")
     cipher.init(
@@ -134,14 +161,7 @@ class CryptoSpec extends AnyFlatSpec with Matchers {
       new SecretKeySpec(DigestUtils.sha256(key.getBytes(UTF_8)).take(16), "AES"),
       new GCMParameterSpec(128, iv),
     )
-    val encryptedData = cipher.doFinal(original.getBytes(UTF_8))
-    val encrypted = s"3-${
-      Base64.encodeBase64String(
-        Array(255.toByte) ++ iv ++ encryptedData
-      )
-    }"
-
-    Crypto.decryptAES(encrypted, key) shouldEqual original
+    val encryptedData = cipher.doFinal(value.getBytes(UTF_8))
+    s"3-${ Base64.encodeBase64String(Array(ivLength.toByte) ++ iv ++ encryptedData) }"
   }
-  // enb of backward compatibility tests
 }

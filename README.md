@@ -25,7 +25,7 @@ application {
   secret = "abcdefghijklmnop" // only for example purposes, you should use a strong randomly generated secret
 }
 
-password = "3-AH3fAKRoJ6PkJC3psZjh9YR/1rmoG6Bu6V2PZKfzfOQjsg==" // use com.evolutiongaming.crypto.Encrypt app to encrypt
+password = "3-DG4i9kr/lboBjhjgwMsT/2f1Jc6vI4O9VucM+ucM7TDi9Q==" // use com.evolutiongaming.crypto.Encrypt app to encrypt
 ```
 
 Use the library as follows

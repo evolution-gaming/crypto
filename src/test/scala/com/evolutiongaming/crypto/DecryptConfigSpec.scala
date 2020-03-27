@@ -32,7 +32,7 @@ class DecryptConfigSpec extends AnyFlatSpec with BeforeAndAfterEach with Matcher
   }
 
   it should "work with plain AES call" in {
-    val password = "3-AH3fAKRoJ6PkJC3psZjh9YR/1rmoG6Bu6V2PZKfzfOQjsg=="
+    val password = "3-DG4i9kr/lboBjhjgwMsT/2f1Jc6vI4O9VucM+ucM7TDi9Q=="
     val secret = "abcdefghijklmnop"
     Crypto.decryptAES(password, secret) shouldEqual correctPassword
   }

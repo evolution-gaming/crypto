@@ -142,7 +142,7 @@ object Crypto {
     * Current AES mode - V3:
     * - no restrictions on key size - SHA256 hash is used to obtain key entropy
     * - AES/GCM/NoPadding (128 bit key) cipher is used to provide authenticated encryption
-    * - dynamic length random IV - 12 bytes by default with possible extension up to 267 bytes
+    * - dynamic length random IV - 12 bytes by default with possible extension up to 255 bytes
     * - 128 bit auth tag length
     */
   private object AES_V3 {
@@ -178,9 +178,8 @@ object Crypto {
     private def encodeEncryptedToString(iv: Array[Byte], encryptedValue: Array[Byte]): String = {
       //1 byte for dynamic IV length encoding
       val buf = ByteBuffer.allocate(1 + iv.length + encryptedValue.length)
-      require(iv.length >= MinIVLengthBytes, s"IV length shouldn't be smaller than $MinIVLengthBytes bytes")
-      //encode IV length as an unsigned byte starting from MinIVLengthBytes
-      buf.put((iv.length - MinIVLengthBytes).toByte)
+      //encode IV length as an unsigned byte
+      buf.put(iv.length.toByte)
       buf.put(iv)
       buf.put(encryptedValue)
       Base64.encodeBase64String(buf.array())
@@ -194,9 +193,7 @@ object Crypto {
 
       val ivOffset = 1 //1 byte for encoded IV length
       val ivEndIdx = ivOffset + ivLength
-      if (payload.length < ivEndIdx) {
-        throw new IllegalArgumentException("invalid data size")
-      }
+      require(payload.length >= ivEndIdx, "invalid data size")
       val gcmParamSpec = new GCMParameterSpec(AuthTagLengthBits, payload, ivOffset, ivLength)
       cipher.init(Cipher.DECRYPT_MODE, skeySpec, gcmParamSpec)
       val decryptInputLength = payload.size - ivEndIdx
@@ -210,7 +207,9 @@ object Crypto {
 
     private def readValidIvLength(payload: Array[Byte]): Int = {
       require(payload.length > 0, "invalid data size")
-      java.lang.Byte.toUnsignedInt(payload(0)) + MinIVLengthBytes
+      val ivLength = java.lang.Byte.toUnsignedInt(payload(0))
+      require(ivLength >= MinIVLengthBytes, s"IV length shouldn't be smaller than $MinIVLengthBytes bytes")
+      ivLength
     }
   }
 
