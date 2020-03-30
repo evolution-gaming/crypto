@@ -15,7 +15,7 @@ Add the following resolver
 
 Add the library to your dependencies list
 
-    libraryDependencies += "com.evolutiongaming" %% "crypto" % "1.6"
+    libraryDependencies += "com.evolutiongaming" %% "crypto" % "2.0.0"
 
 Create an application config file `environments/default.conf`:
 

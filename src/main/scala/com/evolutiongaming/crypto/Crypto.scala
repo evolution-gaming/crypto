@@ -91,12 +91,16 @@ object Crypto {
 
     def decrypt(value: String, privateKey: String): String = {
       val privateKeyBytes = privateKey.getBytes(UTF_8)
-      require(privateKeyBytes.length <= AesKeyBytesMaxSize, throw new AesKeyTooLong)
+      if (privateKeyBytes.length > AesKeyBytesMaxSize) {
+        throw new AesKeyTooLong
+      }
       val effectiveSecretKey = privateKeyBytes.take(AesKeyBytesMaxSize)
       val skeySpec = new SecretKeySpec(effectiveSecretKey, CipherAlgorithm)
       val cipher = Cipher.getInstance(CipherTransformation)
       cipher.init(Cipher.DECRYPT_MODE, skeySpec)
-      new String(cipher.doFinal(Hex.decodeHex(value)))
+      val valueBytes = Hex.decodeHex(value)
+      val decryptedValueBytes = cipher.doFinal(valueBytes)
+      new String(decryptedValueBytes, UTF_8)
     }
   }
 
@@ -108,11 +112,12 @@ object Crypto {
     private val CipherTransformation = "AES"
 
     def decrypt(value: String, privateKey: String): String = {
-      val data = Base64.decodeBase64(value)
+      val valueBytes = Base64.decodeBase64(value)
       val skeySpec = aesSKey128bitWithSha256(privateKey.getBytes(UTF_8))
       val cipher = Cipher.getInstance(CipherTransformation)
       cipher.init(Cipher.DECRYPT_MODE, skeySpec)
-      new String(cipher.doFinal(data), UTF_8)
+      val decryptedValueBytes = cipher.doFinal(valueBytes)
+      new String(decryptedValueBytes, UTF_8)
     }
   }
 
@@ -129,12 +134,11 @@ object Crypto {
       val skeySpec = aesSKey128bitWithSha256(privateKey.getBytes(UTF_8))
       val cipher = Cipher.getInstance(CipherTransformation)
       val blockSize = cipher.getBlockSize
-      if (ivWithEncryptedData.length < blockSize) {
-        throw new IllegalArgumentException("invalid data size")
-      }
+      require(ivWithEncryptedData.length >= blockSize, "invalid data size")
       val (iv, encryptedData) = ivWithEncryptedData.splitAt(blockSize)
       cipher.init(Cipher.DECRYPT_MODE, skeySpec, new IvParameterSpec(iv))
-      new String(cipher.doFinal(encryptedData), UTF_8)
+      val decryptedData = cipher.doFinal(encryptedData)
+      new String(decryptedData, UTF_8)
     }
   }
 
