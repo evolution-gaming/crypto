@@ -1,11 +1,13 @@
 package com.evolutiongaming.crypto
 
-import java.security.MessageDigest
-import java.util.Base64
+import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets.UTF_8
+import java.security.SecureRandom
 
-import javax.crypto.Cipher
-import javax.crypto.spec.{IvParameterSpec, SecretKeySpec}
-import org.apache.commons.codec.binary.Hex
+import javax.crypto.spec.{GCMParameterSpec, IvParameterSpec, SecretKeySpec}
+import javax.crypto.{AEADBadTagException, Cipher}
+import org.apache.commons.codec.binary.{Base64, Hex}
+import org.apache.commons.codec.digest.DigestUtils
 
 /**
   * Copyright (C) 2009-2016 Lightbend Inc. <https://www.lightbend.com>
@@ -13,137 +15,215 @@ import org.apache.commons.codec.binary.Hex
   * Based on https://github.com/playframework/playframework/blob/master/framework/src/play/src/main/scala/play/api/libs/Crypto.scala
   */
 object Crypto {
-  val aesTransformation: String = "AES/CTR/NoPadding"
+  // max allowed length in bytes
+  // For AES we hardcode key length to 128bit minimum to not depend on environment security policy settings:
+  // it may vary between 128 and 256 bits which can yield different encryption keys if we don't
   val AesKeyBytesMaxSize: Int = 16
 
   class AesKeyTooLong extends Exception(
     s"AES key should have size no more than $AesKeyBytesMaxSize bytes"
   )
+  class DecryptAuthException(cause: Throwable) extends Exception(
+    "Decrypted value is not the original one, most likely wrong private key used for decryption",
+    cause,
+  )
+
+  /*
+  using lazy val to postpone init until the first usage so class loading does not get blocked
+  by obtaining entropy for the seed - same trick as in java.util.UUID.Holder
+   */
+  private lazy val secureRandom = new SecureRandom
 
   /**
-    * Encrypt a String with the AES encryption standard and the supplied private key.
+    * Encrypts a string with the AES algorithm and the supplied private key - pair to the
+    * [[decryptAES]] method.
     *
+    * AES/GCM/NoPadding transformation is used with 128 bit key for authenticated encryption.
+    * The secret key entropy is obtained from the given private key by applying the SHA256 hash.
     *
-    * The provider used is by default this uses the platform default JSSE provider.  This can be overridden by defining
-    * `play.crypto.provider` in `application.conf`.
-    *
-    * The transformation algorithm used is the provider specific implementation of the `AES` name.  On Oracles JDK,
-    * this is `AES/CTR/NoPadding`.  This algorithm is suitable for small amounts of data, typically less than 32
-    * bytes, hence is useful for encrypting credit card numbers, passwords etc.  For larger blocks of data, this
-    * algorithm may expose patterns and be vulnerable to repeat attacks.
-    *
-    * The transformation algorithm can be configured by defining `play.crypto.aes.transformation` in
-    * `application.conf`.  Although any cipher transformation algorithm can be selected here, the secret key spec used
-    * is always AES, so only AES transformation algorithms will work.
-    *
-    * @param value      The String to encrypt.
-    * @param privateKey The key used to encrypt.
-    * @return A Base64 encrypted string.
+    * @param value      string value to encrypt
+    * @param privateKey private key string to use in encryption
+    * @return an encrypted string
     */
   def encryptAES(value: String, privateKey: String): String = {
-    val skeySpec = secretKeyWithSha256(privateKey, "AES")
-    val cipher = getCipherWithConfiguredProvider(aesTransformation)
-    cipher.init(Cipher.ENCRYPT_MODE, skeySpec)
-    val encryptedValue = cipher.doFinal(value.getBytes("utf-8"))
-    // return a formatted, versioned encrypted string
-    // '2-*' represents an encrypted payload with an IV
-    // '1-*' represents an encrypted payload without an IV
-    Option(cipher.getIV) match {
-      case Some(iv) => s"2-${Base64.getEncoder.encodeToString(iv ++ encryptedValue)}"
-      case None => s"1-${Base64.getEncoder.encodeToString(encryptedValue)}" // will never fall here as CTR requires IV
-    }
+    s"3-${ AES_V3.encrypt(value, privateKey) }"
   }
 
   /**
-    * Decrypt a String with the AES encryption standard.
+    * Decrypts a string with the AES algorithm and the supplied private key - pair to the
+    * [[encryptAES]] method.
     *
-    * The private key must have a length of 16 bytes.
+    * Additionally to the current [[encryptAES]] encryption mode, several legacy modes supported.
     *
-    * The provider used is by default this uses the platform default JSSE provider.  This can be overridden by defining
-    * `play.crypto.provider` in `application.conf`.
+    * If the current [[encryptAES]] algorithm is used, it is guaranteed that if a decrypted value is returned
+    * it is the original one and the private key is valid. In case a wrong private key is used, an exception
+    * will be thrown.
     *
-    * The transformation used is by default `AES/CTR/NoPadding`.  It can be configured by defining
-    * `play.crypto.aes.transformation` in `application.conf`.  Although any cipher transformation algorithm can
-    * be selected here, the secret key spec used is always AES, so only AES transformation algorithms will work.
-    *
-    * @param value      An hexadecimal encrypted string.
-    * @param privateKey The key used to encrypt.
-    * @return The decrypted String.
+    * @param value      an encrypted string produced by the [[encryptAES]] method
+    * @param privateKey private key string used in encryption
+    * @return decrypted string
     */
   def decryptAES(value: String, privateKey: String): String = {
-    val seperator = "-"
-    val sepIndex = value.indexOf(seperator)
+    val separator = "-"
+    val sepIndex = value.indexOf(separator)
     if (sepIndex < 0) {
-      decryptAESVersion0(value, privateKey)
+      AES_V0.decrypt(value, privateKey)
     } else {
-      val version = value.substring(0, sepIndex)
-      val data = value.substring(sepIndex + 1, value.length())
+      val version = value.take(sepIndex)
+      val data = value.drop(sepIndex + 1)
       version match {
         case "1" =>
-          decryptAESVersion1(data, privateKey)
+          AES_V1.decrypt(data, privateKey)
         case "2" =>
-          decryptAESVersion2(data, privateKey)
-        case _ =>
+          AES_V2.decrypt(data, privateKey)
+        case "3" =>
+          AES_V3.decrypt(data, privateKey)
+        case _   =>
           throw new RuntimeException("Unknown version")
       }
     }
   }
 
-  private def validateAesKeyLength(key: String): Unit =
-    require(key.getBytes("utf-8").length <= AesKeyBytesMaxSize, throw new AesKeyTooLong)
+  /** AES legacy V0 (no versioning) mode support - it has restrictions on key size */
+  private object AES_V0 {
+    private val CipherAlgorithm = "AES"
+    private val CipherTransformation = "AES"
 
-  /**
-    * Transform an hexadecimal String to a byte array.
-    * From https://github.com/playframework/playframework/blob/master/framework/src/play/src/main/scala/play/api/libs/Codecs.scala
-    */
-  private def hexStringToByte(hexString: String): Array[Byte] = Hex.decodeHex(hexString.toCharArray)
-
-  /** Backward compatible AES ECB mode decryption support. */
-  private def decryptAESVersion0(value: String, privateKey: String): String = {
-    validateAesKeyLength(privateKey)
-    val raw = privateKey.substring(0, AesKeyBytesMaxSize).getBytes("utf-8")
-    val skeySpec = new SecretKeySpec(raw, "AES")
-    val cipher = getCipherWithConfiguredProvider("AES")
-    cipher.init(Cipher.DECRYPT_MODE, skeySpec)
-    new String(cipher.doFinal(hexStringToByte(value)))
-  }
-
-  /** V1 decryption algorithm (No IV). */
-  private def decryptAESVersion1(value: String, privateKey: String): String = {
-    val data = Base64.getDecoder.decode(value)
-    val skeySpec = secretKeyWithSha256(privateKey, "AES")
-    val cipher = getCipherWithConfiguredProvider("AES")
-    cipher.init(Cipher.DECRYPT_MODE, skeySpec)
-    new String(cipher.doFinal(data), "utf-8")
-  }
-
-  /** V2 decryption algorithm (IV present). */
-  private def decryptAESVersion2(value: String, privateKey: String): String = {
-    val data = Base64.getDecoder.decode(value)
-    val skeySpec = secretKeyWithSha256(privateKey, "AES")
-    val cipher = getCipherWithConfiguredProvider(aesTransformation)
-    val blockSize = cipher.getBlockSize
-    val iv = data.slice(0, blockSize)
-    val payload = data.slice(blockSize, data.size)
-    cipher.init(Cipher.DECRYPT_MODE, skeySpec, new IvParameterSpec(iv))
-    new String(cipher.doFinal(payload), "utf-8")
+    def decrypt(value: String, privateKey: String): String = {
+      val privateKeyBytes = privateKey.getBytes(UTF_8)
+      if (privateKeyBytes.length > AesKeyBytesMaxSize) {
+        throw new AesKeyTooLong
+      }
+      val effectiveSecretKey = privateKeyBytes.take(AesKeyBytesMaxSize)
+      val skeySpec = new SecretKeySpec(effectiveSecretKey, CipherAlgorithm)
+      val cipher = Cipher.getInstance(CipherTransformation)
+      cipher.init(Cipher.DECRYPT_MODE, skeySpec)
+      val valueBytes = Hex.decodeHex(value)
+      val decryptedValueBytes = cipher.doFinal(valueBytes)
+      new String(decryptedValueBytes, UTF_8)
+    }
   }
 
   /**
-    * Generates the SecretKeySpec, given the private key and the algorithm.
+    * AES legacy V1 mode support:
+    * - no restrictions on key size - SHA256 hash is used to obtain key entropy
     */
-  private def secretKeyWithSha256(privateKey: String, algorithm: String) = {
-    val messageDigest = MessageDigest.getInstance("SHA-256")
-    messageDigest.update(privateKey.getBytes("utf-8"))
-    // max allowed length in bits / (8 bits to a byte)
-    // For AES we hardcode keylength to 128bit minimum to not depend on environment security policy settings:
-    // it may vary between 128 and 256 bits which can yield different encryption keys if we don't
-    val maxAllowedKeyLength = if (algorithm == "AES") AesKeyBytesMaxSize else Cipher.getMaxAllowedKeyLength(algorithm) / 8
-    val raw = messageDigest.digest().slice(0, maxAllowedKeyLength)
-    new SecretKeySpec(raw, algorithm)
+  private object AES_V1 {
+    private val CipherTransformation = "AES"
+
+    def decrypt(value: String, privateKey: String): String = {
+      val valueBytes = Base64.decodeBase64(value)
+      val skeySpec = aesSKey128bitWithSha256(privateKey.getBytes(UTF_8))
+      val cipher = Cipher.getInstance(CipherTransformation)
+      cipher.init(Cipher.DECRYPT_MODE, skeySpec)
+      val decryptedValueBytes = cipher.doFinal(valueBytes)
+      new String(decryptedValueBytes, UTF_8)
+    }
   }
 
-  private def getCipherWithConfiguredProvider(transformation: String) = {
-    Cipher.getInstance(transformation)
+  /**
+    * AES legacy V1 mode support:
+    * - no restrictions on key size - SHA256 hash is used to obtain key entropy
+    * - AES/CTR/NoPadding (128 bit key) cipher with IV
+    */
+  private object AES_V2 {
+    private val CipherTransformation = "AES/CTR/NoPadding"
+
+    def decrypt(value: String, privateKey: String): String = {
+      val ivWithEncryptedData = Base64.decodeBase64(value)
+      val skeySpec = aesSKey128bitWithSha256(privateKey.getBytes(UTF_8))
+      val cipher = Cipher.getInstance(CipherTransformation)
+      val blockSize = cipher.getBlockSize
+      require(ivWithEncryptedData.length >= blockSize, "invalid data size")
+      val (iv, encryptedData) = ivWithEncryptedData.splitAt(blockSize)
+      cipher.init(Cipher.DECRYPT_MODE, skeySpec, new IvParameterSpec(iv))
+      val decryptedData = cipher.doFinal(encryptedData)
+      new String(decryptedData, UTF_8)
+    }
+  }
+
+  /**
+    * Current AES mode - V3:
+    * - no restrictions on key size - SHA256 hash is used to obtain key entropy
+    * - AES/GCM/NoPadding (128 bit key) cipher is used to provide authenticated encryption
+    * - dynamic length random IV - 12 bytes by default with possible extension up to 255 bytes
+    * - 128 bit auth tag length
+    */
+  private object AES_V3 {
+    /*
+    implementation based on
+    https://proandroiddev.com/security-best-practices-symmetric-encryption-with-aes-in-java-7616beaaade9
+     */
+
+    private val CipherTransformation = "AES/GCM/NoPadding"
+    /*
+    same auth tag length as in
+    https://proandroiddev.com/security-best-practices-symmetric-encryption-with-aes-in-java-7616beaaade9
+     */
+    private val AuthTagLengthBits = 128
+    /*
+    for GCM IV a 12 byte random byte-array is recommend by NIST
+    https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf
+     */
+    private val CurrentIVLengthBytes = 12
+    private val MinIVLengthBytes = 12 //does not allow decrypting with IVs smaller than 12 bytes (96 bits)
+
+    def encrypt(value: String, privateKey: String): String = {
+      val skeySpec = aesSKey128bitWithSha256(privateKey.getBytes(UTF_8))
+      val iv = new Array[Byte](CurrentIVLengthBytes)
+      secureRandom.nextBytes(iv)
+      val parameterSpec = new GCMParameterSpec(AuthTagLengthBits, iv)
+      val cipher = Cipher.getInstance(CipherTransformation)
+      cipher.init(Cipher.ENCRYPT_MODE, skeySpec, parameterSpec)
+      val encryptedValue = cipher.doFinal(value.getBytes(UTF_8))
+      encodeEncryptedToString(iv, encryptedValue)
+    }
+
+    private def encodeEncryptedToString(iv: Array[Byte], encryptedValue: Array[Byte]): String = {
+      //1 byte for dynamic IV length encoding
+      val buf = ByteBuffer.allocate(1 + iv.length + encryptedValue.length)
+      //encode IV length as an unsigned byte
+      buf.put(iv.length.toByte)
+      buf.put(iv)
+      buf.put(encryptedValue)
+      Base64.encodeBase64String(buf.array())
+    }
+
+    def decrypt(value: String, privateKey: String): String = {
+      val payload = Base64.decodeBase64(value)
+      val skeySpec = aesSKey128bitWithSha256(privateKey.getBytes(UTF_8))
+      val cipher = Cipher.getInstance(CipherTransformation)
+      val ivLength = readValidIvLength(payload)
+
+      val ivOffset = 1 //1 byte for encoded IV length
+      val ivEndIdx = ivOffset + ivLength
+      require(payload.length >= ivEndIdx, "invalid data size")
+      val gcmParamSpec = new GCMParameterSpec(AuthTagLengthBits, payload, ivOffset, ivLength)
+      cipher.init(Cipher.DECRYPT_MODE, skeySpec, gcmParamSpec)
+      val decryptInputLength = payload.length - ivEndIdx
+      val decryptedValue = try {
+        cipher.doFinal(payload, ivEndIdx, decryptInputLength)
+      } catch {
+        case e: AEADBadTagException => throw new DecryptAuthException(e)
+      }
+      new String(decryptedValue, UTF_8)
+    }
+
+    private def readValidIvLength(payload: Array[Byte]): Int = {
+      require(payload.length > 0, "invalid data size")
+      val ivLength = java.lang.Byte.toUnsignedInt(payload(0))
+      require(ivLength >= MinIVLengthBytes, s"IV length shouldn't be smaller than $MinIVLengthBytes bytes")
+      ivLength
+    }
+  }
+
+  /**
+    * Creates a SecretKeySpec instance for an AES algorithm with an 128 bit key produced from SHA256 hash of
+    * the private key data.
+    */
+  private def aesSKey128bitWithSha256(privateKeyBytes: Array[Byte]): SecretKeySpec = {
+    val privateKeyDigest = DigestUtils.sha256(privateKeyBytes)
+    val effectiveSecretKey = privateKeyDigest.take(16) //128 bit = 16 bytes
+    new SecretKeySpec(effectiveSecretKey, "AES")
   }
 }

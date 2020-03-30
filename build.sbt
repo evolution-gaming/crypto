@@ -14,11 +14,11 @@ bintrayOrganization := Some("evolutiongaming")
 
 scalaVersion := crossScalaVersions.value.head
 
-crossScalaVersions := Seq("2.13.0", "2.12.9")
+crossScalaVersions := Seq("2.13.1", "2.12.11")
 
 libraryDependencies ++= Seq(
   "com.typesafe"   % "config"        % "1.4.0",
-  "commons-codec"  % "commons-codec" % "1.13" ,
+  "commons-codec"  % "commons-codec" % "1.14" ,
   "org.scalatest" %% "scalatest"     % "3.1.1" % Test
 )
 
