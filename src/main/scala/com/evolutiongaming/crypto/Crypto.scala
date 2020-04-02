@@ -15,14 +15,6 @@ import org.apache.commons.codec.digest.DigestUtils
   * Based on https://github.com/playframework/playframework/blob/master/framework/src/play/src/main/scala/play/api/libs/Crypto.scala
   */
 object Crypto {
-  // max allowed length in bytes
-  // For AES we hardcode key length to 128bit minimum to not depend on environment security policy settings:
-  // it may vary between 128 and 256 bits which can yield different encryption keys if we don't
-  val AesKeyBytesMaxSize: Int = 16
-
-  class AesKeyTooLong extends Exception(
-    s"AES key should have size no more than $AesKeyBytesMaxSize bytes"
-  )
   class DecryptAuthException(cause: Throwable) extends Exception(
     "Decrypted value is not the original one, most likely wrong private key used for decryption",
     cause,
@@ -88,13 +80,11 @@ object Crypto {
   private object AES_V0 {
     private val CipherAlgorithm = "AES"
     private val CipherTransformation = "AES"
+    private val KeySizeBytes: Int = 16 //128 bit
 
     def decrypt(value: String, privateKey: String): String = {
       val privateKeyBytes = privateKey.getBytes(UTF_8)
-      if (privateKeyBytes.length > AesKeyBytesMaxSize) {
-        throw new AesKeyTooLong
-      }
-      val effectiveSecretKey = privateKeyBytes.take(AesKeyBytesMaxSize)
+      val effectiveSecretKey = privateKeyBytes.take(KeySizeBytes)
       val skeySpec = new SecretKeySpec(effectiveSecretKey, CipherAlgorithm)
       val cipher = Cipher.getInstance(CipherTransformation)
       cipher.init(Cipher.DECRYPT_MODE, skeySpec)
