@@ -12,7 +12,7 @@ object DecryptConfig {
         config.getBoolean(EncryptedPasswordsPath)
     ) {
       val secret = config getString AppSecretPath
-      Crypto.decryptAES(password, secret.substring(0, 16))
+      Crypto.decryptAES(password, secret)
     } else {
       password
     }

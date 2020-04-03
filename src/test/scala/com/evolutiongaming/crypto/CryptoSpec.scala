@@ -69,9 +69,11 @@ class CryptoSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "not decrypt with key bigger than 16 bytes" in {
-    assertThrows[Crypto.AesKeyTooLong](
-      Crypto.decryptAES("3d458dc2fe2cd11b9e42b2fee8b51f33", "1234567890123456now_it_became_too_long")
-    )
+    val key = "1234567890123456" + "now_it_became_too_long"
+    val original = "secretvalue"
+
+    val encrypted = "3d458dc2fe2cd11b9e42b2fee8b51f33"
+    Crypto.decryptAES(encrypted, key) shouldEqual original
   }
 
   it should "decrypt with key up to 16 bytes (v1)" in {
