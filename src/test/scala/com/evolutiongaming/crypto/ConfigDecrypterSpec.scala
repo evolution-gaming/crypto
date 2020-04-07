@@ -1,18 +1,18 @@
 package com.evolutiongaming.crypto
 
-import com.evolutiongaming.crypto.DecryptConfig.DecryptConfigOps
+import com.evolutiongaming.crypto.ConfigDecrypter.syntax._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class DecryptConfigSpec extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
+class ConfigDecrypterSpec extends AnyFlatSpec with BeforeAndAfterEach with Matchers {
   val correctPassword = "jboss"
 
   private def decrypt(configFile: String): String = {
     val config = ConfigFactory.load(configFile)
     val password = config.getString("password")
-    val decrypted = DecryptConfig(password, config)
+    val decrypted = config.decryptStringUnsafe(password)
     decrypted
   }
 
@@ -37,22 +37,20 @@ class DecryptConfigSpec extends AnyFlatSpec with BeforeAndAfterEach with Matcher
     Crypto.decryptAES(password, secret) shouldEqual correctPassword
   }
 
-  it should "tolerate decryption failures and return provided password" in {
-    val config = ConfigFactory.load("bad-secret.conf")
-    val password = config.getString("password")
-    val decrypted = DecryptConfig(password, config)
-    decrypted should not equal correctPassword
-    decrypted shouldEqual password
+  it should "fail with bad secret" in {
+    intercept[Crypto.DecryptAuthException] {
+      decrypt("bad-secret.conf")
+    }
   }
 
   it should "decrypt encrypted passwords by path (Config extension method)" in {
     val config = ConfigFactory.load("encrypted.conf")
-    config.decryptPath("password") shouldEqual correctPassword
+    config.decryptPathUnsafe("password") shouldEqual correctPassword
   }
 
   it should "support unencrypted passwords (Config extension method)" in {
     val config = ConfigFactory.load("unencrypted.conf")
     val password = config.getString("password")
-    config.decryptString(password) shouldEqual correctPassword
+    config.decryptStringUnsafe(password) shouldEqual correctPassword
   }
 }

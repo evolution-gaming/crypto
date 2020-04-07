@@ -2,20 +2,16 @@ package com.evolutiongaming.crypto
 
 import com.typesafe.config.{Config, ConfigFactory}
 
+/**
+  * @deprecated use ConfigDecrypter which does not swallow decryption failures
+  */
+/*
+TODO: add @deprecated annotation in the next release
+@deprecated("Use ConfigDecrypter which does not swallow decryption failures", since = "3.1.0")
+ */
 object DecryptConfig {
-  private val EncryptedPasswordsPath = "encryptedPasswords"
-  private val AppSecretPath = "application.secret"
-
   def apply(password: String, config: Config = ConfigFactory.load()): String = {
-    if (
-      config.hasPath(EncryptedPasswordsPath) &&
-        config.getBoolean(EncryptedPasswordsPath)
-    ) {
-      val secret = config getString AppSecretPath
-      Crypto.decryptAES(password, secret)
-    } else {
-      password
-    }
+    ConfigDecrypter(config).decryptString(password).getOrElse(password)
   }
 
   implicit class DecryptConfigOps(val self: Config) extends AnyVal {
