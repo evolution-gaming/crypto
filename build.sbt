@@ -14,7 +14,7 @@ bintrayOrganization := Some("evolutiongaming")
 
 scalaVersion := crossScalaVersions.value.head
 
-crossScalaVersions := Seq("2.13.1", "2.12.11")
+crossScalaVersions := Seq("2.13.2", "2.12.11")
 
 libraryDependencies ++= Seq(
   "com.typesafe"   % "config"        % "1.4.0",
