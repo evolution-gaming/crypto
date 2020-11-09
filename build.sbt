@@ -18,7 +18,7 @@ crossScalaVersions := Seq("2.13.1", "2.12.11")
 
 libraryDependencies ++= Seq(
   "com.typesafe"   % "config"        % "1.4.0",
-  "commons-codec"  % "commons-codec" % "1.14" ,
+  "commons-codec"  % "commons-codec" % "1.15" ,
   "org.scalatest" %% "scalatest"     % "3.2.3" % Test
 )
 
