@@ -6,15 +6,15 @@ homepage := Some(new URL("http://github.com/evolution-gaming/crypto"))
 
 startYear := Some(2016)
 
-organizationName := "Evolution Gaming"
+organizationName := "Evolution"
 
 organizationHomepage := Some(url("http://evolutiongaming.com"))
 
-bintrayOrganization := Some("evolutiongaming")
+publishTo := Some(Resolver.evolutionReleases)
 
 scalaVersion := crossScalaVersions.value.head
 
-crossScalaVersions := Seq("2.13.4", "2.12.12")
+crossScalaVersions := Seq("2.13.5", "2.12.13")
 
 libraryDependencies ++= Seq(
   "com.typesafe"   % "config"        % "1.4.1",

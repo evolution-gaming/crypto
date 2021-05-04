@@ -1,4 +1,9 @@
-# Crypto [![Build Status](https://travis-ci.org/evolution-gaming/crypto.svg)](https://travis-ci.org/evolution-gaming/crypto) [![Coverage Status](https://coveralls.io/repos/evolution-gaming/crypto/badge.svg)](https://coveralls.io/r/evolution-gaming/crypto) [ ![version](https://api.bintray.com/packages/evolutiongaming/maven/crypto/images/download.svg) ](https://bintray.com/evolutiongaming/maven/crypto/_latestVersion)
+# Crypto 
+[![Build Status](https://github.com/evolution-gaming/crypto/workflows/CI/badge.svg)](https://github.com/evolution-gaming/crypto/actions?query=workflow%3ACI)
+[![Coverage Status](https://coveralls.io/repos/github/evolution-gaming/crypto/badge.svg?branch=master)](https://coveralls.io/github/evolution-gaming/crypto?branch=master)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/1678ea6c4ac94c10a5cd9c1fc4f51fd4)](https://www.codacy.com/gh/evolution-gaming/crypto/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=evolution-gaming/crypto&amp;utm_campaign=Badge_Grade)
+[![Version](https://img.shields.io/badge/version-click-blue)](https://evolution.jfrog.io/artifactory/api/search/latestVersion?g=com.evolutiongaming&a=crypto_2.13&repos=public)
+[![License](https://img.shields.io/badge/License-Apache%202.0-yellowgreen.svg)](https://opensource.org/licenses/Apache-2.0)
 
 A library that facilitates decrypting passwords using an application secret stored in a [Typesafe Config](https://github.com/typesafehub/config) file.
 
@@ -9,17 +14,17 @@ Partially based on code from the [Play! framework](https://www.playframework.com
 How to use
 ===========
 
-Add the following resolver
-
-    resolvers += Resolver.bintrayRepo("evolutiongaming", "maven")
-
 Add the library to your dependencies list
 
-    libraryDependencies += "com.evolutiongaming" %% "crypto" % "2.0.0"
+```scala
+addSbtPlugin("com.evolution" % "sbt-artifactory-plugin" % "0.0.2")
+
+libraryDependencies += "com.evolutiongaming" %% "crypto" % "2.0.1"
+```
 
 Create an application config file `environments/default.conf`:
 
-```
+```hocon
 encryptedPasswords = true
 application {
   secret = "abcdefghijklmnop" // only for example purposes, you should use a strong randomly generated secret
