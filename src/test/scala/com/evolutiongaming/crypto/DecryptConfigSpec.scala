@@ -53,4 +53,9 @@ class DecryptConfigSpec extends AnyFlatSpec with BeforeAndAfterEach with Matcher
     val password = config.getString("password")
     config.decryptString(password) shouldEqual correctPassword
   }
+
+  it should "fallback to plain password on decryption failure" in {
+    val decrypted = decrypt("fallback.conf")
+    decrypted shouldEqual correctPassword
+  }
 }
