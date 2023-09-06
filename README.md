@@ -19,7 +19,7 @@ Add the library to your dependencies list
 ```scala
 addSbtPlugin("com.evolution" % "sbt-artifactory-plugin" % "0.0.2")
 
-libraryDependencies += "com.evolutiongaming" %% "crypto" % "2.0.1"
+libraryDependencies += "com.evolutiongaming" %% "crypto" % "2.1.0"
 ```
 
 Create an application config file `environments/default.conf`:
