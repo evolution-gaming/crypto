@@ -14,12 +14,12 @@ publishTo := Some(Resolver.evolutionReleases)
 
 scalaVersion := crossScalaVersions.value.head
 
-crossScalaVersions := Seq("2.13.5", "2.12.13")
+crossScalaVersions := Seq("2.13.14", "2.12.19", "3.3.3")
 
 libraryDependencies ++= Seq(
-  "com.typesafe"   % "config"        % "1.4.1",
+  "com.typesafe"   % "config"        % "1.4.3",
   "commons-codec"  % "commons-codec" % "1.15" ,
-  "org.scalatest" %% "scalatest"     % "3.2.3" % Test
+  "org.scalatest" %% "scalatest"     % "3.2.18" % Test
 )
 
 licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")))
