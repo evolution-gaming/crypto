@@ -19,7 +19,7 @@ crossScalaVersions := Seq("2.13.14", "2.12.19", "3.3.3")
 libraryDependencies ++= Seq(
   "com.typesafe"   % "config"        % "1.4.3",
   "commons-codec"  % "commons-codec" % "1.15" ,
-  "org.scalatest" %% "scalatest"     % "3.2.18" % Test
+  "org.scalatest" %% "scalatest"     % "3.2.19" % Test
 )
 
 licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")))
