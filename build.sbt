@@ -2,13 +2,13 @@ name := "crypto"
 
 organization := "com.evolutiongaming"
 
-homepage := Some(new URL("http://github.com/evolution-gaming/crypto"))
+homepage := Some(url("https://github.com/evolution-gaming/crypto"))
 
 startYear := Some(2016)
 
 organizationName := "Evolution"
 
-organizationHomepage := Some(url("http://evolutiongaming.com"))
+organizationHomepage := Some(url("https://evolution.com"))
 
 publishTo := Some(Resolver.evolutionReleases)
 
@@ -25,3 +25,7 @@ libraryDependencies ++= Seq(
 licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")))
 
 releaseCrossBuild := true
+
+//addCommandAlias("check", "all versionPolicyCheck Compile/doc")
+addCommandAlias("check", "show version")
+addCommandAlias("build", "+all compile test")
