@@ -14,7 +14,7 @@ publishTo := Some(Resolver.evolutionReleases)
 
 scalaVersion := crossScalaVersions.value.head
 
-crossScalaVersions := Seq("2.13.14", "2.12.19", "3.3.3")
+crossScalaVersions := Seq("2.13.14", "2.12.21", "3.3.3")
 
 libraryDependencies ++= Seq(
   "com.typesafe"   % "config"        % "1.4.3",
