@@ -17,7 +17,7 @@ scalaVersion := crossScalaVersions.value.head
 crossScalaVersions := Seq("2.13.14", "2.12.19", "3.3.3")
 
 libraryDependencies ++= Seq(
-  "com.typesafe"   % "config"        % "1.4.3",
+  "com.typesafe"   % "config"        % "1.4.8",
   "commons-codec"  % "commons-codec" % "1.15" ,
   "org.scalatest" %% "scalatest"     % "3.2.18" % Test
 )
