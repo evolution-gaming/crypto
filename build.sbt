@@ -4,13 +4,13 @@ name := "crypto"
 
 organization := "com.evolutiongaming"
 
-homepage := Some(url("https://github.com/evolution-gaming/crypto"))
+homepage := Some(uri("https://github.com/evolution-gaming/crypto"))
 
 startYear := Some(2016)
 
 organizationName := "Evolution"
 
-organizationHomepage := Some(url("https://evolution.com"))
+organizationHomepage := Some(uri("https://evolution.com"))
 
 publishTo := Some(Resolver.evolutionReleases)
 
@@ -26,7 +26,7 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.2.20" % Test,
 )
 
-licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")))
+licenses := Seq(("Apache-2.0", uri("https://www.apache.org/licenses/LICENSE-2.0")))
 
 // check is called with + from the release action
 addCommandAlias("check", "all versionPolicyCheck Compile/doc scalafmtCheckRepo")
