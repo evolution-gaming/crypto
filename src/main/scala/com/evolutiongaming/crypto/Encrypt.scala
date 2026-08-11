@@ -13,7 +13,10 @@ object Encrypt extends App {
       generated
     }
 
-    require(privateKey.length == 16, s"Expected privateKey to have 16 characters, got ${privateKey.length} characters instead")
+    require(
+      privateKey.length == 16,
+      s"Expected privateKey to have 16 characters, got ${ privateKey.length } characters instead",
+    )
 
     val encrypted = Crypto.encryptAES(value, privateKey)
     println(encrypted)
