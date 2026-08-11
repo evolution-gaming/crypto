@@ -12,7 +12,7 @@ object DecryptConfig {
   def apply(password: String, config: Config = ConfigFactory.load()): String = try {
     if (
       config.hasPath(EncryptedPasswordsPath) &&
-        config.getBoolean(EncryptedPasswordsPath)
+      config.getBoolean(EncryptedPasswordsPath)
     ) {
       val secret = config getString AppSecretPath
       Crypto.decryptAES(password, secret)

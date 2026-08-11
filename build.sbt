@@ -1,31 +1,34 @@
+import sbtversionpolicy.Compatibility.BinaryCompatible
+
 name := "crypto"
 
 organization := "com.evolutiongaming"
 
-homepage := Some(url("https://github.com/evolution-gaming/crypto"))
+homepage := Some(uri("https://github.com/evolution-gaming/crypto"))
 
 startYear := Some(2016)
 
 organizationName := "Evolution"
 
-organizationHomepage := Some(url("https://evolution.com"))
+organizationHomepage := Some(uri("https://evolution.com"))
 
 publishTo := Some(Resolver.evolutionReleases)
 
 scalaVersion := crossScalaVersions.value.head
 
-crossScalaVersions := Seq("2.13.14", "2.12.19", "3.3.3")
+crossScalaVersions := Seq("2.13.18", "3.3.8")
+
+versionPolicyIntention := BinaryCompatible
 
 libraryDependencies ++= Seq(
-  "com.typesafe"   % "config"        % "1.4.3",
+  "com.typesafe"   % "config"        % "1.4.9",
   "commons-codec"  % "commons-codec" % "1.22.1" ,
-  "org.scalatest" %% "scalatest"     % "3.2.18" % Test
+  "org.scalatest" %% "scalatest"     % "3.2.20" % Test
 )
 
-licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")))
+licenses := Seq(("Apache-2.0", uri("https://www.apache.org/licenses/LICENSE-2.0")))
 
-releaseCrossBuild := true
-
-//addCommandAlias("check", "all versionPolicyCheck Compile/doc")
-addCommandAlias("check", "show version")
-addCommandAlias("build", "+all compile test")
+// check is called with + from the release action
+addCommandAlias("check", "all versionPolicyCheck Compile/doc scalafmtCheckRepo")
+addCommandAlias("fmt", "+all scalafmtRepo")
+addCommandAlias("build", "all compile testFull")

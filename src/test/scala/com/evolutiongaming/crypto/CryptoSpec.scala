@@ -1,14 +1,13 @@
 package com.evolutiongaming.crypto
 
-import java.nio.charset.StandardCharsets.UTF_8
-
-import javax.crypto.Cipher
-import javax.crypto.spec.{GCMParameterSpec, SecretKeySpec}
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.codec.digest.DigestUtils
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
+import java.nio.charset.StandardCharsets.UTF_8
+import javax.crypto.Cipher
+import javax.crypto.spec.{GCMParameterSpec, SecretKeySpec}
 import scala.util.Random
 
 class CryptoSpec extends AnyFlatSpec with Matchers {
