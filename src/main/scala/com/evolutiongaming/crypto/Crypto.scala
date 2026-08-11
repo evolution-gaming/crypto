@@ -1,19 +1,20 @@
 package com.evolutiongaming.crypto
 
-import java.nio.ByteBuffer
-import java.nio.charset.StandardCharsets.UTF_8
-import java.security.SecureRandom
-
-import javax.crypto.spec.{GCMParameterSpec, IvParameterSpec, SecretKeySpec}
-import javax.crypto.{AEADBadTagException, Cipher}
 import org.apache.commons.codec.binary.{Base64, Hex}
 import org.apache.commons.codec.digest.DigestUtils
 
+import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets.UTF_8
+import java.security.SecureRandom
+import javax.crypto.spec.{GCMParameterSpec, IvParameterSpec, SecretKeySpec}
+import javax.crypto.{AEADBadTagException, Cipher}
+
 /**
-  * Copyright (C) 2009-2016 Lightbend Inc. <https://www.lightbend.com>
-  *
-  * Based on https://github.com/playframework/playframework/blob/master/framework/src/play/src/main/scala/play/api/libs/Crypto.scala
-  */
+ * Copyright (C) 2009-2016 Lightbend Inc. <https://www.lightbend.com>
+ *
+ * Based on
+ * https://github.com/playframework/playframework/blob/master/framework/src/play/src/main/scala/play/api/libs/Crypto.scala
+ */
 object Crypto {
   class DecryptAuthException(cause: Throwable) extends Exception(
     "Decrypted value is not the original one, most likely wrong private key used for decryption",
@@ -27,34 +28,40 @@ object Crypto {
   private lazy val secureRandom = new SecureRandom
 
   /**
-    * Encrypts a string with the AES algorithm and the supplied private key - pair to the
-    * [[decryptAES]] method.
-    *
-    * AES/GCM/NoPadding transformation is used with 128 bit key for authenticated encryption.
-    * The secret key entropy is obtained from the given private key by applying the SHA256 hash.
-    *
-    * @param value      string value to encrypt
-    * @param privateKey private key string to use in encryption
-    * @return an encrypted string
-    */
+   * Encrypts a string with the AES algorithm and the supplied private key - pair to the
+   * [[decryptAES]] method.
+   *
+   * AES/GCM/NoPadding transformation is used with 128 bit key for authenticated encryption. The
+   * secret key entropy is obtained from the given private key by applying the SHA256 hash.
+   *
+   * @param value
+   *   string value to encrypt
+   * @param privateKey
+   *   private key string to use in encryption
+   * @return
+   *   an encrypted string
+   */
   def encryptAES(value: String, privateKey: String): String = {
     s"3-${ AES_V3.encrypt(value, privateKey) }"
   }
 
   /**
-    * Decrypts a string with the AES algorithm and the supplied private key - pair to the
-    * [[encryptAES]] method.
-    *
-    * Additionally to the current [[encryptAES]] encryption mode, several legacy modes supported.
-    *
-    * If the current [[encryptAES]] algorithm is used, it is guaranteed that if a decrypted value is returned
-    * it is the original one and the private key is valid. In case a wrong private key is used, an exception
-    * will be thrown.
-    *
-    * @param value      an encrypted string produced by the [[encryptAES]] method
-    * @param privateKey private key string used in encryption
-    * @return decrypted string
-    */
+   * Decrypts a string with the AES algorithm and the supplied private key - pair to the
+   * [[encryptAES]] method.
+   *
+   * Additionally to the current [[encryptAES]] encryption mode, several legacy modes supported.
+   *
+   * If the current [[encryptAES]] algorithm is used, it is guaranteed that if a decrypted value is
+   * returned it is the original one and the private key is valid. In case a wrong private key is
+   * used, an exception will be thrown.
+   *
+   * @param value
+   *   an encrypted string produced by the [[encryptAES]] method
+   * @param privateKey
+   *   private key string used in encryption
+   * @return
+   *   decrypted string
+   */
   def decryptAES(value: String, privateKey: String): String = {
     val separator = "-"
     val sepIndex = value.indexOf(separator)
@@ -70,17 +77,19 @@ object Crypto {
           AES_V2.decrypt(data, privateKey)
         case "3" =>
           AES_V3.decrypt(data, privateKey)
-        case _   =>
+        case _ =>
           throw new RuntimeException("Unknown version")
       }
     }
   }
 
-  /** AES legacy V0 (no versioning) mode support - it has restrictions on key size */
+  /**
+   * AES legacy V0 (no versioning) mode support - it has restrictions on key size
+   */
   private object AES_V0 {
     private val CipherAlgorithm = "AES"
     private val CipherTransformation = "AES"
-    private val KeySizeBytes: Int = 16 //128 bit
+    private val KeySizeBytes: Int = 16 // 128 bit
 
     def decrypt(value: String, privateKey: String): String = {
       val privateKeyBytes = privateKey.getBytes(UTF_8)
@@ -95,9 +104,9 @@ object Crypto {
   }
 
   /**
-    * AES legacy V1 mode support:
-    * - no restrictions on key size - SHA256 hash is used to obtain key entropy
-    */
+   * AES legacy V1 mode support:
+   *   - no restrictions on key size - SHA256 hash is used to obtain key entropy
+   */
   private object AES_V1 {
     private val CipherTransformation = "AES"
 
@@ -112,10 +121,10 @@ object Crypto {
   }
 
   /**
-    * AES legacy V1 mode support:
-    * - no restrictions on key size - SHA256 hash is used to obtain key entropy
-    * - AES/CTR/NoPadding (128 bit key) cipher with IV
-    */
+   * AES legacy V1 mode support:
+   *   - no restrictions on key size - SHA256 hash is used to obtain key entropy
+   *   - AES/CTR/NoPadding (128 bit key) cipher with IV
+   */
   private object AES_V2 {
     private val CipherTransformation = "AES/CTR/NoPadding"
 
@@ -133,12 +142,12 @@ object Crypto {
   }
 
   /**
-    * Current AES mode - V3:
-    * - no restrictions on key size - SHA256 hash is used to obtain key entropy
-    * - AES/GCM/NoPadding (128 bit key) cipher is used to provide authenticated encryption
-    * - dynamic length random IV - 12 bytes by default with possible extension up to 255 bytes
-    * - 128 bit auth tag length
-    */
+   * Current AES mode - V3:
+   *   - no restrictions on key size - SHA256 hash is used to obtain key entropy
+   *   - AES/GCM/NoPadding (128 bit key) cipher is used to provide authenticated encryption
+   *   - dynamic length random IV - 12 bytes by default with possible extension up to 255 bytes
+   *   - 128 bit auth tag length
+   */
   private object AES_V3 {
     /*
     implementation based on
@@ -156,7 +165,7 @@ object Crypto {
     https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf
      */
     private val CurrentIVLengthBytes = 12
-    private val MinIVLengthBytes = 12 //does not allow decrypting with IVs smaller than 12 bytes (96 bits)
+    private val MinIVLengthBytes = 12 // does not allow decrypting with IVs smaller than 12 bytes (96 bits)
 
     def encrypt(value: String, privateKey: String): String = {
       val skeySpec = aesSKey128bitWithSha256(privateKey.getBytes(UTF_8))
@@ -170,9 +179,9 @@ object Crypto {
     }
 
     private def encodeEncryptedToString(iv: Array[Byte], encryptedValue: Array[Byte]): String = {
-      //1 byte for dynamic IV length encoding
+      // 1 byte for dynamic IV length encoding
       val buf = ByteBuffer.allocate(1 + iv.length + encryptedValue.length)
-      //encode IV length as an unsigned byte
+      // encode IV length as an unsigned byte
       buf.put(iv.length.toByte)
       buf.put(iv)
       buf.put(encryptedValue)
@@ -185,7 +194,7 @@ object Crypto {
       val cipher = Cipher.getInstance(CipherTransformation)
       val ivLength = readValidIvLength(payload)
 
-      val ivOffset = 1 //1 byte for encoded IV length
+      val ivOffset = 1 // 1 byte for encoded IV length
       val ivEndIdx = ivOffset + ivLength
       require(payload.length >= ivEndIdx, "invalid data size")
       val gcmParamSpec = new GCMParameterSpec(AuthTagLengthBits, payload, ivOffset, ivLength)
@@ -208,12 +217,12 @@ object Crypto {
   }
 
   /**
-    * Creates a SecretKeySpec instance for an AES algorithm with an 128 bit key produced from SHA256 hash of
-    * the private key data.
-    */
+   * Creates a SecretKeySpec instance for an AES algorithm with an 128 bit key produced from SHA256
+   * hash of the private key data.
+   */
   private def aesSKey128bitWithSha256(privateKeyBytes: Array[Byte]): SecretKeySpec = {
     val privateKeyDigest = DigestUtils.sha256(privateKeyBytes)
-    val effectiveSecretKey = privateKeyDigest.take(16) //128 bit = 16 bytes
+    val effectiveSecretKey = privateKeyDigest.take(16) // 128 bit = 16 bytes
     new SecretKeySpec(effectiveSecretKey, "AES")
   }
 }
