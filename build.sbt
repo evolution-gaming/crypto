@@ -22,7 +22,7 @@ versionPolicyIntention := BinaryCompatible
 
 libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.4.9",
-  "commons-codec" % "commons-codec" % "1.15",
+  "commons-codec" % "commons-codec" % "1.22.1",
   "org.scalatest" %% "scalatest" % "3.2.20" % Test,
 )
 
