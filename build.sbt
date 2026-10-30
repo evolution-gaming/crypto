@@ -16,7 +16,7 @@ publishTo := Some(Resolver.evolutionReleases)
 
 scalaVersion := crossScalaVersions.value.head
 
-crossScalaVersions := Seq("2.13.18", "3.3.9")
+crossScalaVersions := Seq("2.13.18", "3.9.0")
 
 versionPolicyIntention := BinaryCompatible
 
