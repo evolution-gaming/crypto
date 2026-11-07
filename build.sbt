@@ -21,7 +21,7 @@ crossScalaVersions := Seq("2.13.18", "3.3.9")
 versionPolicyIntention := BinaryCompatible
 
 libraryDependencies ++= Seq(
-  "com.typesafe" % "config" % "1.4.9",
+  "com.typesafe" % "config" % "1.4.10",
   "commons-codec" % "commons-codec" % "1.23.0",
   "org.scalatest" %% "scalatest" % "3.2.20" % Test,
 )
